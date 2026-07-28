@@ -1,6 +1,6 @@
 # ServerSentry LB Groups Bridge
 
-Version **1.7.0** — server-side integration for **ServerSentryMod 1.4.8**, **LBmaster Core**, and **LBmaster Groups**.
+Version **1.7.1** — server-side integration for **ServerSentryMod 1.4.8**, **LBmaster Core**, and **LBmaster Groups**.
 
 LB Killfeed support is intentionally not included. Install `ServerSentryLBKillfeed` separately when required.
 

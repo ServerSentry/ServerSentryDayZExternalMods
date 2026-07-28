@@ -1,6 +1,6 @@
 # ServerSentry Expansion Bridge
 
-Version **1.1.0** — server-side integration for **ServerSentryMod 1.4.8** and selected **DayZ Expansion** modules.
+Version **1.1.1** — server-side integration for **ServerSentryMod 1.4.8** and selected **DayZ Expansion** modules.
 
 ## Features
 

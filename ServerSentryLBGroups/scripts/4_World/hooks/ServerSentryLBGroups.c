@@ -207,12 +207,15 @@ class ServerSentryLBGroupsGroupCapture
             return;
         }
 
-        ref map<string, ref ServerSentryLBGroupsGroupMemberSnapshot> members = new map<string, ref ServerSentryLBGroupsGroupMemberSnapshot>();
+        // A null member collection means the group has not finished loading.
+        // Preserve any existing baseline instead of replacing it with an empty
+        // snapshot and reporting false joins during the next reconciliation.
         if (!group.members)
         {
-            s_GroupSnapshots.Set(groupKey, members);
             return;
         }
+
+        ref map<string, ref ServerSentryLBGroupsGroupMemberSnapshot> members = new map<string, ref ServerSentryLBGroupsGroupMemberSnapshot>();
 
         foreach (LBGroupMember member : group.members)
         {

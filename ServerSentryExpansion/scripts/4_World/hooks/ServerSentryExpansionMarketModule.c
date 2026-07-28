@@ -265,13 +265,14 @@ class ServerSentryExpansionMarketCapture
 
     protected static bool ContainsAny(string value, string a, string b, string c, string d, string e, string f, string g)
     {
-        return value.IndexOf(a) != -1
-            || value.IndexOf(b) != -1
-            || value.IndexOf(c) != -1
-            || value.IndexOf(d) != -1
-            || value.IndexOf(e) != -1
-            || value.IndexOf(f) != -1
-            || value.IndexOf(g) != -1;
+        if (value.IndexOf(a) != -1) return true;
+        if (value.IndexOf(b) != -1) return true;
+        if (value.IndexOf(c) != -1) return true;
+        if (value.IndexOf(d) != -1) return true;
+        if (value.IndexOf(e) != -1) return true;
+        if (value.IndexOf(f) != -1) return true;
+        if (value.IndexOf(g) != -1) return true;
+        return false;
     }
 
     static void End()

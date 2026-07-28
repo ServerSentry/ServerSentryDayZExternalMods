@@ -1,6 +1,6 @@
 # ServerSentry LB ATM Bridge
 
-Version **1.1.0** — server-side telemetry integration for **ServerSentryMod 1.4.8** and **LBmaster Groups ATM / Enhanced Banking**.
+Version **1.1.1** — server-side telemetry integration for **ServerSentryMod 1.4.8** and **LBmaster Groups ATM / Enhanced Banking**.
 
 ## Design
 

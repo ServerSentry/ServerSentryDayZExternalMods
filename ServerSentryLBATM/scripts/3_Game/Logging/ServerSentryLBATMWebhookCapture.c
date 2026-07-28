@@ -420,10 +420,27 @@ class ServerSentryLBATMWebhookCapture
     {
         string normalized = type;
         normalized.ToLower();
-        return normalized.IndexOf("pin") != -1
-            || normalized.IndexOf("passcode") != -1
-            || normalized.IndexOf("password") != -1
-            || normalized.IndexOf("secret") != -1;
+        if (normalized.IndexOf("pin") != -1)
+        {
+            return true;
+        }
+
+        if (normalized.IndexOf("passcode") != -1)
+        {
+            return true;
+        }
+
+        if (normalized.IndexOf("password") != -1)
+        {
+            return true;
+        }
+
+        if (normalized.IndexOf("secret") != -1)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     static string BuildSafeRawArguments(string type, TStringArray args)
