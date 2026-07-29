@@ -11,7 +11,8 @@ class CfgPatches
             "DZ_Scripts",
             "ServerSentryScripts",
             "LBmaster_Core",
-            "LBmaster_Groups"
+            "LBmaster_Groups",
+            "LBmaster_GroupDLCPlotpole"
         };
     };
 };
@@ -29,7 +30,7 @@ class CfgMods
         credits = "";
         author = "Krypton91";
         authorID = "0";
-        version = "1.7.0";
+        version = "1.8.1";
         extra = 0;
         type = "mod";
         dependencies[] = {"World","Mission"};

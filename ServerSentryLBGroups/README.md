@@ -1,6 +1,6 @@
 # ServerSentry LB Groups Bridge
 
-Version **1.7.1** — server-side integration for **ServerSentryMod 1.4.8**, **LBmaster Core**, and **LBmaster Groups**.
+Version **1.8.0** — server-side integration for **ServerSentryMod 1.4.8**, **LBmaster Core**, and **LBmaster Groups**.
 
 LB Killfeed support is intentionally not included. Install `ServerSentryLBKillfeed` separately when required.
 
@@ -12,6 +12,19 @@ LB Killfeed support is intentionally not included. Install `ServerSentryLBKillfe
 - LB Groups chat capture and external-provider registration.
 - Idempotent shop action for chat tags.
 - Idempotent shop action for clan-tag colors.
+- Live Map flag-pole details for Advanced Groups ownership.
+
+
+## Live Map flag-pole details
+
+When the LB Groups Plotpole module (`LBmaster_GroupDLCPlotpole`) is active, the bridge registers a ServerSentry Live Base Detail provider. Clicking an Advanced Groups flag pole can show:
+
+- Group name
+- Group tag
+- Group level
+- Current members and, when available, the configured maximum
+
+Unclaimed flags are shown as `Unclaimed`. If a persisted owner tag exists but the group can no longer be resolved, the bridge shows the saved tag and hash for diagnostics. The stable detail keys are `groupName`, `groupTag`, `groupLevel`, `groupMembers`, and `groupHash`, so a later provider can override them through `ServerSentryLiveDetails.UpsertBaseDetail(...)`.
 
 ## Snapshot safety
 
