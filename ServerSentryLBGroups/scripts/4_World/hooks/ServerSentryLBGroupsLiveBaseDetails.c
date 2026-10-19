@@ -1,6 +1,6 @@
 /**
     \file ServerSentryLBGroupsLiveBaseDetails.c
-    \brief Adds LB Groups ownership information to ServerSentry Live Map flag-pole details.
+    \brief Adds LB Groups ownership information to ServerSentry Live Map Flagpole details.
 */
 
 /**
@@ -33,7 +33,7 @@ class ServerSentryLBGroupsFlagPoleDetailProvider: ServerSentryLiveBaseDetailProv
         if (!s_LoggedFirstApply)
         {
             s_LoggedFirstApply = true;
-            Print("[ServerSentryLBGroups][LiveMap] Flag-pole detail provider is active. First flag owner hash=" + flag.ownerGroupTagHash.ToString() + " tag='" + flag.ownerGroupTag + "'.");
+            Print("[ServerSentryLBGroups][LiveMap] Flagpole detail provider is active. First flag owner hash=" + flag.ownerGroupTagHash.ToString() + " tag='" + flag.ownerGroupTag + "'.");
         }
 
         LBGroup group = ResolveOwnerGroup(flag);
@@ -136,14 +136,14 @@ class ServerSentryLBGroupsFlagPoleDetailProvider: ServerSentryLiveBaseDetailProv
 }
 
 /**
-    \brief Registers the LB Groups flag-pole detail provider through ServerSentry's extension hook.
+    \brief Registers the LB Groups Flagpole detail provider through ServerSentry's extension hook.
 */
 modded class ServerSentryLiveBaseDetailBootstrap
 {
     override void RegisterExtensionProviders()
     {
         super.RegisterExtensionProviders();
-        Print("[ServerSentryLBGroups][LiveMap] Registering LB Groups flag-pole detail provider.");
+        Print("[ServerSentryLBGroups][LiveMap] Registering LB Groups Flagpole detail provider.");
         ServerSentryLiveBaseDetailRegistry.Register(new ServerSentryLBGroupsFlagPoleDetailProvider());
     }
 }

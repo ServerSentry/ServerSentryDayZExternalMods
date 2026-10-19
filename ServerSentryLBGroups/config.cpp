@@ -30,12 +30,21 @@ class CfgMods
         credits = "";
         author = "Krypton91";
         authorID = "0";
-        version = "1.8.1";
+        version = "1.8.2";
         extra = 0;
         type = "mod";
-        dependencies[] = {"World","Mission"};
+        dependencies[] = {"Game","World","Mission"};
         class defs
         {
+            class gameScriptModule
+            {
+                value = "";
+                files[] =
+                {
+                    "ServerSentry/ServerSentryLBGroups/scripts/3_Game"
+                };
+            };
+
             class worldScriptModule
             {
                 value = "";
