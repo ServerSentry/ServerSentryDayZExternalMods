@@ -165,13 +165,7 @@ modded class ActionBuildPart
         {
             if (adminBuild && ServerSentryBBPConsts.LOG_ADMIN_BUILD_PART)
             {
-                ssEvent = ServerSentryBBPBridge.CreateBBPAction(
-                    action_data,
-                    "basebuilding_admin_build_part",
-                    "Admin build BBP part",
-                    "ActionBuildPart",
-                    "build_part",
-                    "BBP.ActionBuildPart.OnFinishProgressServer");
+                ssEvent = ServerSentryBBPBridge.CreateBBPAction(action_data, "basebuilding_admin_build_part", "Admin build BBP part", "ActionBuildPart", "build_part", "BBP.ActionBuildPart.OnFinishProgressServer");
 
                 if (ssEvent)
                 {
@@ -180,13 +174,7 @@ modded class ActionBuildPart
             }
             else if (!adminBuild && ServerSentryBBPConsts.LOG_BUILD_PART)
             {
-                ssEvent = ServerSentryBBPBridge.CreateBBPAction(
-                    action_data,
-                    "basebuilding_build_part",
-                    "Build BBP part",
-                    "ActionBuildPart",
-                    "build_part",
-                    "BBP.ActionBuildPart.OnFinishProgressServer");
+                ssEvent = ServerSentryBBPBridge.CreateBBPAction(action_data, "basebuilding_build_part", "Build BBP part", "ActionBuildPart", "build_part", "BBP.ActionBuildPart.OnFinishProgressServer");
             }
         }
 

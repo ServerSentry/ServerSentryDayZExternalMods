@@ -274,151 +274,357 @@ class ServerSentryExpansionSafeZoneResolver
     }
 }
 
-class ServerSentryExpansionSafeZoneLiveMarkers
+/**
+    \brief Retains zone geometry so unchanged settings do not rebuild map markers.
+*/
+class ServerSentryExpansionSafeZoneMarkerState
 {
-    const static string MARKER_PREFIX = "expansion-safezone-";
-    protected static int s_RefreshIntervalMs;
-    protected static bool s_Started;
+    /** \brief Expansion geometry type represented by this marker. */
+    string shape;
+    /** \brief Last exported circle or cylinder centre. */
+    vector center;
+    /** \brief Last exported circle or cylinder radius. */
+    float radius;
+    /** \brief Last exported cylinder height. */
+    float height;
+    /** \brief Owned copy of polygon points, independent of mutable settings. */
+    ref array<vector> points;
+    /** \brief Marker instance registered by this integration. */
+    ref ServerSentryLiveWorldEventDto marker;
+    /** \brief Whether the current refresh still contains this zone. */
+    bool seen;
 
-    static void Start()
+    /**
+        \brief Compares typed geometry and detects removed or replaced registrations.
+        \param shapeLabel \p Expansion shape name.
+        \param position \p current centre.
+        \param zoneRadius \p current radius.
+        \param zoneHeight \p current cylinder height.
+        \param positions \p current polygon points, or null for round zones.
+        \return \p true when the registered marker already represents these settings.
+    */
+    bool Matches(string shapeLabel, vector position, float zoneRadius, float zoneHeight, array<vector> positions)
     {
-        if (s_Started)
+        if (!ServerSentryMapMarkers.IsRegistered(marker))
         {
-            return;
+            return false;
         }
 
-        if (!GetGame() || !GetGame().IsServer())
+        if (shape != shapeLabel || center != position || radius != zoneRadius || height != zoneHeight)
+        {
+            return false;
+        }
+
+        if (!positions)
+        {
+            return !points;
+        }
+
+        if (!points || points.Count() != positions.Count())
+        {
+            return false;
+        }
+
+        for (int i = 0; i < points.Count(); i++)
+        {
+            if (points[i] != positions[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
+/**
+    \brief Publishes changed Expansion safezones without rebuilding unchanged markers.
+*/
+class ServerSentryExpansionSafeZoneLiveMarkers
+{
+    /** \brief Namespace reserved for Expansion safezone markers. */
+    const static string MARKER_PREFIX = "expansion-safezone-";
+    /** \brief Settings reconciliation interval, independent of snapshot polling. */
+    protected static int s_RefreshIntervalMs;
+    /** \brief Prevents duplicate timers and ignores callbacks after shutdown. */
+    protected static bool s_Started;
+    /** \brief Prevents repeated registry clears while integration output is disabled. */
+    protected static bool s_Cleared;
+    /** \brief Last successfully registered geometry by stable settings index. */
+    protected static ref map<int, ref ServerSentryExpansionSafeZoneMarkerState> s_Zones;
+
+    /** \brief Starts bounded settings reconciliation once per mission. */
+    static void Start()
+    {
+        if (s_Started || !GetGame() || !GetGame().IsServer())
         {
             return;
         }
 
         s_Started = true;
+        s_Cleared = false;
+        s_Zones = new map<int, ref ServerSentryExpansionSafeZoneMarkerState>();
         s_RefreshIntervalMs = 60000;
 
-        if (ServerSentryConfigManager.Get())
+        ServerSentryConfigManager configManager = ServerSentryConfigManager.Get();
+        if (configManager)
         {
-            int configuredDelay = ServerSentryConfigManager.Get().GetLiveUpdatePollingDelay();
-            if (configuredDelay > s_RefreshIntervalMs)
-            {
-                s_RefreshIntervalMs = configuredDelay;
-            }
+            int configuredDelay = configManager.GetLiveUpdatePollingDelay();
+            s_RefreshIntervalMs = Math.Max(s_RefreshIntervalMs, configuredDelay);
         }
 
         GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(Refresh, 5000, false);
         GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).CallLater(Refresh, s_RefreshIntervalMs, true);
     }
 
-    static void Refresh()
+    /** \brief Removes callbacks and mission-owned markers without scheduling an export. */
+    static void Stop()
     {
-        if (!GetGame() || !GetGame().IsServer())
+        s_Started = false;
+        if (GetGame())
         {
-            return;
+            GetGame().GetCallQueue(CALL_CATEGORY_SYSTEM).Remove(Refresh);
         }
 
-        if (!ServerSentryDefaults.LogExpansionSafeZoneEvents())
+        ServerSentryMapMarkers.ClearByPrefix(MARKER_PREFIX);
+        s_Zones = null;
+        s_Cleared = false;
+    }
+
+    /** \brief Reconciles loaded settings and requests one export only when markers change. */
+    static void Refresh()
+    {
+        if (!s_Started || !GetGame() || !GetGame().IsServer())
         {
-            ServerSentryLiveApi.ClearMarkersByPrefix(MARKER_PREFIX);
             return;
         }
 
         ServerSentryConfigManager configManager = ServerSentryConfigManager.Get();
-        if (!configManager || !configManager.IsAllowedToStartLiveLogging())
+        if (!configManager)
         {
-            ServerSentryLiveApi.ClearMarkersByPrefix(MARKER_PREFIX);
+            return;
+        }
+
+        if (!ServerSentryDefaults.LogExpansionSafeZoneEvents() || !configManager.IsAllowedToStartLiveLogging())
+        {
+            ClearMarkers();
             return;
         }
 
         ExpansionSettings expansionSettings = GetExpansionSettings();
         if (!expansionSettings)
         {
-            ServerSentryLiveApi.ClearMarkersByPrefix(MARKER_PREFIX);
             return;
         }
 
         ExpansionSafeZoneSettings safeZoneSettings = expansionSettings.GetSafeZone(false);
-        if (!safeZoneSettings)
+        if (!safeZoneSettings || !safeZoneSettings.IsLoaded())
         {
-            ServerSentryLiveApi.ClearMarkersByPrefix(MARKER_PREFIX);
+            // A temporary reload must not publish the disappearance of every zone.
             return;
         }
 
-        ServerSentryLiveApi.ClearMarkersByPrefix(MARKER_PREFIX);
-        int globalIndex = 0;
+        if (!safeZoneSettings.Enabled)
+        {
+            ClearMarkers();
+            return;
+        }
 
+        s_Cleared = false;
+        foreach (int key, ServerSentryExpansionSafeZoneMarkerState state : s_Zones)
+        {
+            state.seen = false;
+        }
+
+        bool changed;
+        int globalIndex;
         if (safeZoneSettings.CircleZones)
         {
-            foreach (ExpansionSafeZoneCircle circleZone: safeZoneSettings.CircleZones)
+            foreach (ExpansionSafeZoneCircle circleZone : safeZoneSettings.CircleZones)
             {
-                if (circleZone)
+                int circleIndex = globalIndex;
+                globalIndex++;
+                if (!circleZone)
                 {
-                    UpsertCircleZone(circleZone, globalIndex);
+                    continue;
                 }
 
-                globalIndex++;
+                if (UpdateZone(circleIndex, "Circle", circleZone.Center, circleZone.Radius, 0, null))
+                {
+                    changed = true;
+                }
             }
         }
 
         if (safeZoneSettings.CylinderZones)
         {
-            foreach (ExpansionSafeZoneCylinder cylinderZone: safeZoneSettings.CylinderZones)
+            foreach (ExpansionSafeZoneCylinder cylinderZone : safeZoneSettings.CylinderZones)
             {
-                if (cylinderZone)
+                int cylinderIndex = globalIndex;
+                globalIndex++;
+                if (!cylinderZone)
                 {
-                    UpsertCylinderZone(cylinderZone, globalIndex);
+                    continue;
                 }
 
-                globalIndex++;
+                if (UpdateZone(cylinderIndex, "Cylinder", cylinderZone.Center, cylinderZone.Radius, cylinderZone.Height, null))
+                {
+                    changed = true;
+                }
             }
         }
 
         if (safeZoneSettings.PolygonZones)
         {
-            foreach (ExpansionSafeZonePolygon polygonZone: safeZoneSettings.PolygonZones)
+            foreach (ExpansionSafeZonePolygon polygonZone : safeZoneSettings.PolygonZones)
             {
-                if (polygonZone && polygonZone.Positions && polygonZone.Positions.Count() >= 3)
+                int polygonIndex = globalIndex;
+                globalIndex++;
+                if (!polygonZone || !polygonZone.Positions || polygonZone.Positions.Count() < 3)
                 {
-                    UpsertPolygonZone(polygonZone, globalIndex);
+                    continue;
                 }
 
-                globalIndex++;
+                if (UpdateZone(polygonIndex, "Polygon", vector.Zero, 0, 0, polygonZone.Positions))
+                {
+                    changed = true;
+                }
             }
+        }
+
+        if (RemoveMissingZones())
+        {
+            changed = true;
+        }
+
+        if (changed)
+        {
+            ServerSentryLiveApi.WriteSnapshot();
         }
     }
 
-    protected static void UpsertCircleZone(ExpansionSafeZoneCircle circleZone, int index)
+    /** \brief Clears disabled output once and exports only an actual removal. */
+    protected static void ClearMarkers()
     {
-        ServerSentryLiveWorldEventDto marker = ServerSentryLiveApi.CreateMarker(MARKER_PREFIX + index.ToString(), "Expansion circle safezone #" + index.ToString(), circleZone.Center, circleZone.Radius, "ShieldCheck");
-        marker.eventType = "safezone";
-        marker.className = "ExpansionSafeZoneCircle";
-        marker.shape = "circle";
-        AddCommonDetails(marker, index, "Circle");
-        ServerSentryLiveApi.AddMarkerDetail(marker, "radius", "Radius", Math.Round(circleZone.Radius).ToString() + " m");
-        ServerSentryLiveApi.UpsertMarker(marker);
+        if (s_Cleared)
+        {
+            return;
+        }
+
+        s_Cleared = true;
+        s_Zones.Clear();
+        if (ServerSentryMapMarkers.ClearByPrefix(MARKER_PREFIX) > 0)
+        {
+            ServerSentryLiveApi.WriteSnapshot();
+        }
     }
 
-    protected static void UpsertCylinderZone(ExpansionSafeZoneCylinder cylinderZone, int index)
+    /**
+        \brief Replaces only markers whose geometry or registry entry changed.
+        \param index \p original index across all configured shape collections.
+        \param shapeLabel \p Expansion shape name.
+        \param position \p circle or cylinder centre.
+        \param radius \p circle or cylinder radius.
+        \param height \p cylinder height.
+        \param positions \p polygon points, or null for round zones.
+        \return \p true when a marker was successfully registered.
+    */
+    protected static bool UpdateZone(int index, string shapeLabel, vector position, float radius, float height, array<vector> positions)
     {
-        ServerSentryLiveWorldEventDto marker = ServerSentryLiveApi.CreateMarker(MARKER_PREFIX + index.ToString(), "Expansion cylinder safezone #" + index.ToString(), cylinderZone.Center, cylinderZone.Radius, "ShieldCheck");
+        ServerSentryExpansionSafeZoneMarkerState state = s_Zones.Get(index);
+        if (state && state.Matches(shapeLabel, position, radius, height, positions))
+        {
+            state.seen = true;
+            return false;
+        }
+
+        string markerId = MARKER_PREFIX + index.ToString();
+        string name = "Expansion " + shapeLabel + " safezone #" + index.ToString();
+        ServerSentryLiveWorldEventDto marker;
+        if (positions)
+        {
+            marker = ServerSentryLiveApi.CreatePolygonMarker(markerId, name, positions, "ShieldCheck");
+            string pointCount = positions.Count().ToString();
+            ServerSentryLiveApi.AddMarkerDetail(marker, "points", "Points", pointCount);
+        }
+        else
+        {
+            marker = ServerSentryLiveApi.CreateMarker(markerId, name, position, radius, "ShieldCheck");
+            marker.shape = "circle";
+        }
+
         marker.eventType = "safezone";
-        marker.className = "ExpansionSafeZoneCylinder";
-        marker.shape = "circle";
-        AddCommonDetails(marker, index, "Cylinder");
-        ServerSentryLiveApi.AddMarkerDetail(marker, "radius", "Radius", Math.Round(cylinderZone.Radius).ToString() + " m");
-        ServerSentryLiveApi.AddMarkerDetail(marker, "height", "Height", Math.Round(cylinderZone.Height).ToString() + " m");
-        ServerSentryLiveApi.UpsertMarker(marker);
+        marker.className = "ExpansionSafeZone" + shapeLabel;
+        AddCommonDetails(marker, index, shapeLabel);
+
+        string radiusLabel = "Radius";
+        if (positions)
+        {
+            radiusLabel = "Approx. radius";
+        }
+
+        string radiusText = Math.Round(marker.radius).ToString() + " m";
+        ServerSentryLiveApi.AddMarkerDetail(marker, "radius", radiusLabel, radiusText);
+        if (shapeLabel == "Cylinder")
+        {
+            string heightText = Math.Round(height).ToString() + " m";
+            ServerSentryLiveApi.AddMarkerDetail(marker, "height", "Height", heightText);
+        }
+
+        if (!ServerSentryMapMarkers.Register(marker))
+        {
+            return false;
+        }
+
+        state = new ServerSentryExpansionSafeZoneMarkerState();
+        state.shape = shapeLabel;
+        state.center = position;
+        state.radius = radius;
+        state.height = height;
+        state.marker = marker;
+        state.seen = true;
+        if (positions)
+        {
+            state.points = new array<vector>();
+            state.points.Copy(positions);
+        }
+
+        s_Zones.Set(index, state);
+        return true;
     }
 
-    protected static void UpsertPolygonZone(ExpansionSafeZonePolygon polygonZone, int index)
+    /**
+        \brief Removes zones no longer present in the loaded settings.
+        \return \p true when a registered marker was removed.
+    */
+    protected static bool RemoveMissingZones()
     {
-        ServerSentryLiveWorldEventDto marker = ServerSentryLiveApi.CreatePolygonMarker(MARKER_PREFIX + index.ToString(), "Expansion polygon safezone #" + index.ToString(), polygonZone.Positions, "ShieldCheck");
-        marker.eventType = "safezone";
-        marker.className = "ExpansionSafeZonePolygon";
-        AddCommonDetails(marker, index, "Polygon");
-        ServerSentryLiveApi.AddMarkerDetail(marker, "points", "Points", polygonZone.Positions.Count().ToString());
-        ServerSentryLiveApi.AddMarkerDetail(marker, "radius", "Approx. radius", Math.Round(marker.radius).ToString() + " m");
-        ServerSentryLiveApi.UpsertMarker(marker);
+        bool changed;
+        for (int i = s_Zones.Count() - 1; i >= 0; i--)
+        {
+            ServerSentryExpansionSafeZoneMarkerState state = s_Zones.GetElement(i);
+            if (state.seen)
+            {
+                continue;
+            }
+
+            if (ServerSentryMapMarkers.Remove(state.marker.objectId))
+            {
+                changed = true;
+            }
+
+            s_Zones.Remove(s_Zones.GetKey(i));
+        }
+
+        return changed;
     }
 
+    /**
+        \brief Adds metadata shared by all safezone shapes.
+        \param marker \p marker being prepared for registration.
+        \param index \p original settings index.
+        \param shapeLabel \p human-readable shape name.
+    */
     protected static void AddCommonDetails(ServerSentryLiveWorldEventDto marker, int index, string shapeLabel)
     {
         ServerSentryLiveApi.AddMarkerDetail(marker, "source", "Source", "DayZ Expansion Core");
@@ -427,6 +633,7 @@ class ServerSentryExpansionSafeZoneLiveMarkers
         ServerSentryLiveApi.AddMarkerDetail(marker, "shape", "Shape", shapeLabel);
     }
 }
+
 
 modded class PlayerBase
 {

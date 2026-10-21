@@ -152,9 +152,10 @@ class ServerSentryLBGroupsGroupCapture
     /**
     	\brief Builds snapshot.
     	\param member \p member used by the operation.
+        \param onlinePlayers \p optional identity lookup shared by one reconciliation pass.
     	\return \p The resulting LB Groups group member snapshot instance, or null when unavailable.
     */
-    static ServerSentryLBGroupsGroupMemberSnapshot BuildSnapshot(LBGroupMember member)
+    static ServerSentryLBGroupsGroupMemberSnapshot BuildSnapshot(LBGroupMember member, map<string, PlayerBase> onlinePlayers = null)
     {
         ServerSentryLBGroupsGroupMemberSnapshot snap = new ServerSentryLBGroupsGroupMemberSnapshot();
         if (!member)
@@ -175,7 +176,15 @@ class ServerSentryLBGroupsGroupCapture
         snap.subgroup = member.currentSubgroup;
         snap.tempMember = member.tempMember;
 
-        PlayerBase player = FindPlayerBySteamId(snap.steamId);
+        PlayerBase player;
+        if (onlinePlayers)
+        {
+            player = onlinePlayers.Get(snap.steamId);
+        }
+        else
+        {
+            player = FindPlayerBySteamId(snap.steamId);
+        }
         if (player && player.GetIdentity())
         {
             snap.bohemiaId = player.GetIdentity().GetId();
@@ -191,8 +200,9 @@ class ServerSentryLBGroupsGroupCapture
     /**
     	\brief Processes the capture group operation.
     	\param group \p group used by the operation.
+        \param onlinePlayers \p optional identity lookup shared while loading all groups.
     */
-    static void CaptureGroup(LBGroup group)
+    static void CaptureGroup(LBGroup group, map<string, PlayerBase> onlinePlayers = null)
     {
         if (!GetGame() || !GetGame().IsServer() || !group)
         {
@@ -215,6 +225,11 @@ class ServerSentryLBGroupsGroupCapture
             return;
         }
 
+        if (!onlinePlayers)
+        {
+            onlinePlayers = BuildOnlinePlayerIndex();
+        }
+
         ref map<string, ref ServerSentryLBGroupsGroupMemberSnapshot> members = new map<string, ref ServerSentryLBGroupsGroupMemberSnapshot>();
 
         foreach (LBGroupMember member : group.members)
@@ -230,7 +245,8 @@ class ServerSentryLBGroupsGroupCapture
                 continue;
             }
 
-            members.Set(memberKey, BuildSnapshot(member));
+            ServerSentryLBGroupsGroupMemberSnapshot snapshot = BuildSnapshot(member, onlinePlayers);
+            members.Set(memberKey, snapshot);
         }
 
         s_GroupSnapshots.Set(groupKey, members);
@@ -253,6 +269,7 @@ class ServerSentryLBGroupsGroupCapture
             return;
         }
 
+        map<string, PlayerBase> onlinePlayers = BuildOnlinePlayerIndex();
         ref map<string, bool> seenGroupKeys = new map<string, bool>();
         foreach (LBGroup group : groups)
         {
@@ -261,7 +278,7 @@ class ServerSentryLBGroupsGroupCapture
             {
                 seenGroupKeys.Set(key, true);
             }
-            CaptureGroup(group);
+            CaptureGroup(group, onlinePlayers);
         }
 
         CleanupMissingGroupSnapshots(seenGroupKeys);
@@ -332,7 +349,8 @@ class ServerSentryLBGroupsGroupCapture
             return;
         }
 
-        ref map<string, bool> seen = new map<string, bool>();
+        map<string, PlayerBase> onlinePlayers = BuildOnlinePlayerIndex();
+        ref map<string, ref ServerSentryLBGroupsGroupMemberSnapshot> nextMembers = new map<string, ref ServerSentryLBGroupsGroupMemberSnapshot>();
         foreach (LBGroupMember member : group.members)
         {
             if (!member)
@@ -346,9 +364,9 @@ class ServerSentryLBGroupsGroupCapture
                 continue;
             }
 
-            seen.Set(memberKey, true);
             ServerSentryLBGroupsGroupMemberSnapshot oldSnap = oldMembers.Get(memberKey);
-            ServerSentryLBGroupsGroupMemberSnapshot newSnap = BuildSnapshot(member);
+            ServerSentryLBGroupsGroupMemberSnapshot newSnap = BuildSnapshot(member, onlinePlayers);
+            nextMembers.Set(memberKey, newSnap);
 
             if (!oldSnap)
             {
@@ -356,19 +374,19 @@ class ServerSentryLBGroupsGroupCapture
             }
             else if (oldSnap.subgroup != newSnap.subgroup)
             {
-                EmitSubgroupChange(group, member, oldSnap.subgroup, newSnap.subgroup, sourceHook, "diff_subgroup_changed");
+                EmitMemberEvent(group, member, oldSnap, newSnap, "subgroup_change", sourceHook, "diff_subgroup_changed");
             }
         }
 
         foreach (string oldMemberKey, ServerSentryLBGroupsGroupMemberSnapshot removedSnap : oldMembers)
         {
-            if (!seen.Contains(oldMemberKey))
+            if (!nextMembers.Contains(oldMemberKey))
             {
                 EmitMemberEvent(group, null, removedSnap, null, "leave", sourceHook, "diff_member_removed");
             }
         }
 
-        CaptureGroup(group);
+        s_GroupSnapshots.Set(groupKey, nextMembers);
     }
 
     /**
@@ -707,6 +725,38 @@ class ServerSentryLBGroupsGroupCapture
         }
 
         return false;
+    }
+
+    /**
+        \brief Captures online identities once for a group reconciliation pass.
+        \return \p Temporary Steam ID lookup; no player references survive the pass.
+    */
+    protected static map<string, PlayerBase> BuildOnlinePlayerIndex()
+    {
+        map<string, PlayerBase> result = new map<string, PlayerBase>();
+        if (!GetGame())
+        {
+            return result;
+        }
+
+        array<Man> players = new array<Man>();
+        GetGame().GetPlayers(players);
+        foreach (Man man : players)
+        {
+            PlayerBase player = PlayerBase.Cast(man);
+            if (!player || !player.GetIdentity())
+            {
+                continue;
+            }
+
+            string steamId = player.GetIdentity().GetPlainId();
+            if (steamId != "")
+            {
+                result.Set(steamId, player);
+            }
+        }
+
+        return result;
     }
 
     /**

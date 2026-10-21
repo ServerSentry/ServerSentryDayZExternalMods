@@ -147,3 +147,23 @@ modded class ServerSentryLiveBaseDetailBootstrap
         ServerSentryLiveBaseDetailRegistry.Register(new ServerSentryLBGroupsFlagPoleDetailProvider());
     }
 }
+
+/** \brief Invalidates only the flag whose ownership actually changed. */
+modded class TerritoryFlag
+{
+    /**
+        \brief Refreshes cached Live Map details after LB Groups assigns an owner.
+        \param tag \p new owner group tag accepted by the native mod.
+    */
+    override void SetOwnerGroup(string tag)
+    {
+        string previousTag = ownerGroupTag;
+        int previousHash = ownerGroupTagHash;
+        super.SetOwnerGroup(tag);
+
+        if (previousTag != ownerGroupTag || previousHash != ownerGroupTagHash)
+        {
+            ServerSentryLiveApi.InvalidateBaseDetails(this);
+        }
+    }
+}
