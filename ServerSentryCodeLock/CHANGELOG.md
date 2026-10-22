@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Use `GetCodeLockRS()` for the DayZ 1.30-compatible CodeLock attachment lookup.
+- Permanently suppress synchronization records before the original file logger and ServerSentry emission; remove the sync logging switch.
+- Honor the current core server/telemetry gate before capturing events.
+- Document limitations of legacy target attribution and outcome timing.
+
 ## 1.1.0
 
 - Resolves the exact RPC target before proximity fallback.

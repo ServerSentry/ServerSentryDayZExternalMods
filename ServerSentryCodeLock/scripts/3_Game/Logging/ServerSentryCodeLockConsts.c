@@ -9,7 +9,6 @@ class ServerSentryCodeLockConsts
     const static bool LOG_ACCESS_EVENTS = true;
     const static bool LOG_ATTACH_EVENTS = true;
     const static bool LOG_RAID_EVENTS = true;
-    const static bool LOG_SYNC_EVENTS = false;
     const static bool LOG_ADMIN_EVENTS = true;
 
     // Access subtypes.

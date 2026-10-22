@@ -4,9 +4,9 @@ Version **1.1.0** — server-side integration for **ServerSentryMod 1.4.8** and 
 
 ## Features
 
-- Access, attachment, raid, synchronization, and admin telemetry.
+- Access, attachment, raid, and admin telemetry.
 - Failed-passcode result detection without storing the passcode.
-- Exact RPC-target correlation with proximity fallback.
+- RPC-context correlation with proximity fallback for legacy logger calls.
 - Optional low-level lock/owner/guest hooks for diagnostics.
 - Bounded duplicate suppression.
 
@@ -20,7 +20,7 @@ RPC correlation is short-lived, cleared before every request, and expires after 
 
 - DayZ server
 - ServerSentryMod 1.4.8
-- CodeLock (`CodeLock` patch; adjust `requiredAddons[]` if your build uses another patch name)
+- CodeLock with the DayZ 1.30 compatibility getter `ItemBase.GetCodeLockRS()` (`CodeLock` patch; adjust `requiredAddons[]` if your build uses another patch name)
 
 ## Installation
 
@@ -38,9 +38,11 @@ Edit:
 scripts/3_Game/Logging/ServerSentryCodeLockConsts.c
 ```
 
-Main switches include access, attach, raid, sync, admin, failed-passcode, and optional internal-hook logging. Internal hooks are disabled by default to avoid duplicate/noisy records.
+Main switches include access, attach, raid, admin, failed-passcode, and optional internal-hook logging. Internal hooks are disabled by default to avoid duplicate/noisy records.
 
-Result semantics use `denied` for ownership denial, `progress` for incomplete raids, and `observed` for sync/unknown logger records.
+Synchronization records (`synch`/`sync`, case-insensitive) are always discarded before the original CodeLock file logger and ServerSentry emission. There is no switch to re-enable them. The bridge also honors the current core telemetry gate (`IsAllowedToStartTelemetryLogging`).
+
+Result semantics use `denied` for ownership denial, `progress` for incomplete raids, and `observed` for unknown logger records.
 
 Common actions:
 
@@ -57,7 +59,6 @@ passcode_failed
 attach
 raid_progress
 raid_success
-sync_request
 admin_open
 admin_change
 admin_remove
@@ -70,7 +71,7 @@ admin_join
 2. Resolve a lock attached to that target when possible.
 3. Only then fall back to a two-metre proximity search for legacy logger calls.
 
-This avoids attributing an action to a neighboring lock in dense bases.
+The RPC envelope may target the player rather than the lock. In that case the legacy position lookup is used; it cannot guarantee correct attribution when several locks are close together. Legacy log messages may also precede the actual state change, so a `success` record is not proof that a gate finished opening.
 
 ## Project structure
 
@@ -91,3 +92,5 @@ ServerSentryCodeLock/
 - Confirm no passcode is present in payloads or server logs.
 - Test two nearby CodeLocks and confirm the correct target is selected.
 - Test raid and admin paths separately.
+- Trigger repeated owner/guest synchronization: no sync file records or ServerSentry sync events should be produced.
+- Disable core telemetry and confirm the bridge emits no ServerSentry events.

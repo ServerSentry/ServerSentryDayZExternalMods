@@ -101,12 +101,23 @@ class ServerSentryCodeLockBridge
 {
     static bool Enabled()
     {
-        return ServerSentryCodeLockConsts.ENABLED && ServerSentryCodeLockConsts.LOG_CODELOCK_EVENTS && ServerSentryDefaults.LogCodeLockEvents();
+        if (!GetGame() || !GetGame().IsServer())
+        {
+            return false;
+        }
+
+        return ServerSentryCodeLockConsts.ENABLED && ServerSentryCodeLockConsts.LOG_CODELOCK_EVENTS && ServerSentryDefaults.LogCodeLockEvents() && ServerSentryConfigManager.Get().IsAllowedToStartTelemetryLogging();
+    }
+
+    static bool IsSyncLogType(string type)
+    {
+        string normalizedType = Normalize(type);
+        return normalizedType == "synch" || normalizedType == "sync";
     }
 
     static void EmitLegacyLog(string type, PlayerIdentity playerId = null, vector pos = "0 0 0", string accessType = "", bool claim = false, bool cut = false, float damage = 0, float health = 0)
     {
-        if (!Enabled())
+        if (IsSyncLogType(type) || !Enabled())
         {
             return;
         }
@@ -436,7 +447,7 @@ class ServerSentryCodeLockBridge
         ItemBase parent = ItemBase.Cast(target);
         if (parent)
         {
-            return CodeLock.Cast(parent.GetCodeLock());
+            return CodeLock.Cast(parent.GetCodeLockRS());
         }
 
         return null;
@@ -470,7 +481,7 @@ class ServerSentryCodeLockBridge
                 continue;
             }
 
-            CodeLock attachedLock = CodeLock.Cast(itemParent.GetCodeLock());
+            CodeLock attachedLock = CodeLock.Cast(itemParent.GetCodeLockRS());
             if (attachedLock)
             {
                 return attachedLock;
@@ -501,11 +512,6 @@ class ServerSentryCodeLockBridge
                 return "raid_success";
             }
             return "raid_progress";
-        }
-
-        if (type == "synch")
-        {
-            return "sync_request";
         }
 
         if (type == "admin")
@@ -544,11 +550,6 @@ class ServerSentryCodeLockBridge
             return "progress";
         }
 
-        if (type == "synch")
-        {
-            return "observed";
-        }
-
         if (action.IndexOf("codelock_") == 0)
         {
             return "observed";
@@ -579,7 +580,6 @@ class ServerSentryCodeLockBridge
         if (type == "access" && !ServerSentryCodeLockConsts.LOG_ACCESS_EVENTS) return false;
         if (type == "attach" && !ServerSentryCodeLockConsts.LOG_ATTACH_EVENTS) return false;
         if (type == "raid" && !ServerSentryCodeLockConsts.LOG_RAID_EVENTS) return false;
-        if (type == "synch" && !ServerSentryCodeLockConsts.LOG_SYNC_EVENTS) return false;
         if (type == "admin" && !ServerSentryCodeLockConsts.LOG_ADMIN_EVENTS) return false;
 
         if (action == "set_code") return ServerSentryCodeLockConsts.LOG_SET_CODE;
@@ -606,6 +606,12 @@ modded class CodeLockLogger
 {
     override void WriteLog(string type, PlayerIdentity playerId = null, vector pos = "0 0 0", string accessType = "", bool claim = false, bool cut = false, float damage = 0, float health = 0)
     {
+        // Ignore synchronization before either the original file logger or telemetry runs.
+        if (ServerSentryCodeLockBridge.IsSyncLogType(type))
+        {
+            return;
+        }
+
         super.WriteLog(type, playerId, pos, accessType, claim, cut, damage, health);
         ServerSentryCodeLockBridge.EmitLegacyLog(type, playerId, pos, accessType, claim, cut, damage, health);
     }
