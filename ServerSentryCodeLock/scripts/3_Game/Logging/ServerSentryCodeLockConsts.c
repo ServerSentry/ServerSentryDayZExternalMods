@@ -16,12 +16,12 @@ class ServerSentryCodeLockConsts
     const static bool LOG_CHANGE_CODE = true;
     const static bool LOG_NOT_OWNER_DENIED = true;
     const static bool LOG_ENTER_CODE = true;
-    const static bool LOG_QUICK_ACCESS = false;
+    const static bool LOG_QUICK_ACCESS = true;
     const static bool LOG_CLAIM_OWNER = true;
     const static bool LOG_ADD_GUEST = true;
     const static bool LOG_REMOVE_LOCK = true;
 
-    // Additional check via CodeLock.IsLocked while RPC context is active.
+    // Explicit failed attempts from the exact lock in the decoded RPC payload.
     // Passcodes are never written; only the failed result is logged.
     const static bool LOG_FAILED_PASSCODE = true;
 
@@ -45,7 +45,7 @@ class ServerSentryCodeLockConsts
     const static bool LOG_INTERNAL_GUEST_ADD = false;
     const static bool LOG_INTERNAL_GUEST_CLEAR = false;
 
-    // Dedupe identical CodeLock bridge events in a tiny window.
+    // Dedupe optional low-level diagnostics only; real attempts are never merged.
     const static int DEDUP_WINDOW_MS = 500;
     const static int DEDUP_RETENTION_MS = 60000;
     const static int DEDUP_CLEANUP_INTERVAL_MS = 30000;
