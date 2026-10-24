@@ -49,7 +49,7 @@ Unclaimed flags are shown as `Unclaimed`. If a persisted owner tag exists but th
 @LBmaster_Core;@LBmaster_Groups;@ServerSentryMod;@ServerSentryLBGroups
 ```
 
-Pack this folder separately and preserve `$PBOPREFIX$.txt`.
+Pack this folder separately and preserve `$PBOPREFIX$.txt`. See [repository packing instructions](../README.md#packing) for the exact Addon Builder prefix and script-file settings.
 
 ## Group actions
 

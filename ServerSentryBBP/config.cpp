@@ -40,7 +40,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryBBP/scripts/3_Game"
+                    "ServerSentryDayZExternalMods/ServerSentryBBP/scripts/3_Game"
                 };
             };
             class worldScriptModule
@@ -48,7 +48,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryBBP/scripts/4_World"
+                    "ServerSentryDayZExternalMods/ServerSentryBBP/scripts/4_World"
                 };
             };
         };

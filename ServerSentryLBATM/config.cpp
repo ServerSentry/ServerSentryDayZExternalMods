@@ -41,7 +41,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryLBATM/scripts/3_Game"
+                    "ServerSentryDayZExternalMods/ServerSentryLBATM/scripts/3_Game"
                 };
             };
         };

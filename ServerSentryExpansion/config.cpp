@@ -45,7 +45,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryExpansion/scripts/4_World"
+                    "ServerSentryDayZExternalMods/ServerSentryExpansion/scripts/4_World"
                 };
             };
 
@@ -54,7 +54,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryExpansion/scripts/5_Mission"
+                    "ServerSentryDayZExternalMods/ServerSentryExpansion/scripts/5_Mission"
                 };
             };
         };

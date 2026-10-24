@@ -24,7 +24,7 @@ Version **1.1.1** — server-side integration for **ServerSentryMod 1.4.8** and 
 @CF;@DayZ-Expansion-Core;@DayZ-Expansion-Market;@ServerSentryMod;@ServerSentryExpansion
 ```
 
-Use the actual folder names from your server. Pack this bridge separately and preserve `$PBOPREFIX$.txt`.
+Use the actual folder names from your server. Pack this bridge separately and preserve `$PBOPREFIX$.txt`. See [repository packing instructions](../README.md#packing) for the exact Addon Builder prefix and script-file settings.
 
 ## Market result semantics
 

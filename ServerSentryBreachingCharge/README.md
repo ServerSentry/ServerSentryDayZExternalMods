@@ -26,7 +26,7 @@ Version **1.1.0** — server-side integration for **ServerSentryMod 1.4.8** and 
 ## Installation
 
 1. Pack the `ServerSentryBreachingCharge` folder as its own PBO.
-2. Preserve `$PBOPREFIX$.txt`.
+2. Preserve `$PBOPREFIX$.txt` and use its full prefix (see the [repository packing instructions](../README.md#packing)).
 3. Load HDSN BreachingCharge and ServerSentryMod before this bridge.
 4. Compile and test against the exact installed HDSN version.
 

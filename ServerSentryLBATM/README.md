@@ -34,7 +34,7 @@ Non-sensitive raw webhook telemetry is capped at 4,096 characters per event.
 @LBmaster_Core;@LBmaster_Groups_ATM;@ServerSentryMod;@ServerSentryLBATM
 ```
 
-Pack this folder separately and preserve `$PBOPREFIX$.txt`.
+Pack this folder separately and preserve `$PBOPREFIX$.txt`. See [repository packing instructions](../README.md#packing) for the exact Addon Builder prefix and script-file settings.
 
 ## Captured categories
 

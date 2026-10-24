@@ -40,7 +40,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryCodeLock/scripts/3_Game"
+                    "ServerSentryDayZExternalMods/ServerSentryCodeLock/scripts/3_Game"
                 };
             };
 
@@ -49,7 +49,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryCodeLock/scripts/4_World"
+                    "ServerSentryDayZExternalMods/ServerSentryCodeLock/scripts/4_World"
                 };
             };
         };

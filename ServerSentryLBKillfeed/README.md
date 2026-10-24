@@ -48,7 +48,7 @@ All operations use ServerSentry's product-fulfillment state, so retried requests
 @LBmaster_Core;@LBmaster_Killfeed;@ServerSentryMod;@ServerSentryLBKillfeed
 ```
 
-Pack this folder separately and preserve `$PBOPREFIX$.txt`.
+Pack this folder separately and preserve `$PBOPREFIX$.txt`. See [repository packing instructions](../README.md#packing) for the exact Addon Builder prefix and script-file settings.
 
 ## Project structure
 

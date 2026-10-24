@@ -41,7 +41,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryLBKillfeed/scripts/4_World"
+                    "ServerSentryDayZExternalMods/ServerSentryLBKillfeed/scripts/4_World"
                 };
             };
         };

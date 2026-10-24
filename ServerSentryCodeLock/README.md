@@ -31,7 +31,7 @@ The updated CodeLock and bridge must be rebuilt and deployed together. This inte
 @CodeLock;@ServerSentryMod;@ServerSentryCodeLock
 ```
 
-Pack this folder separately and preserve `$PBOPREFIX$.txt`. Deploy the matching CodeLock build to the server and clients, and the rebuilt bridge to the server. An older CodeLock build does not provide the new logging methods required by this bridge.
+Pack this folder separately and preserve `$PBOPREFIX$.txt`. See [repository packing instructions](../README.md#packing) for the exact Addon Builder prefix and script-file settings. Deploy the matching CodeLock build to the server and clients, and the rebuilt bridge to the server. An older CodeLock build does not provide the new logging methods required by this bridge.
 
 ## Configuration
 

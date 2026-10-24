@@ -39,7 +39,7 @@ class CfgMods
                 value = "";
                 files[] =
                 {
-                    "ServerSentry/ServerSentryDrJones/scripts/4_World"
+                    "ServerSentryDayZExternalMods/ServerSentryDrJones/scripts/4_World"
                 };
             };
         };

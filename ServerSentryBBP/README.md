@@ -34,7 +34,7 @@ BaseBuildingPlus_Scripts
 ## Installation
 
 1. Pack the `ServerSentryBBP` folder as its own PBO.
-2. Preserve the PBO prefix `ServerSentryBBP`.
+2. Set the PBO prefix to `ServerSentryDayZExternalMods\ServerSentryBBP` (see the [repository packing instructions](../README.md#packing)).
 3. Install the bridge as a separate server/client mod package.
 4. Load ServerSentryMod and BaseBuildingPlus before this bridge.
 5. Do not copy or repack BaseBuildingPlus files into this package.
