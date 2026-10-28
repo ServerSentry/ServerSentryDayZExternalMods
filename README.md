@@ -2,6 +2,8 @@
 
 Optional integration bridges for the ServerSentry DayZ mod. Each `ServerSentry*` subfolder containing a `config.cpp` is a separate addon. Install only bridges whose third-party dependencies are present; see each bridge's README for its requirements.
 
+Vanilla `DigitalCodeLock` events are handled by the main ServerSentry mod. The optional `ServerSentryCodeLock` bridge is for the third-party RoomService/Wardog CodeLock mod and requires no custom changes to that mod.
+
 ## Packing
 
 1. Select one bridge folder, including its `config.cpp`, as the addon source. Do not pack the repository root as a single addon.

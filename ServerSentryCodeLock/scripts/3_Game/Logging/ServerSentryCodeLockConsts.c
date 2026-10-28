@@ -5,7 +5,7 @@ class ServerSentryCodeLockConsts
     // Master switch: if false, no CodeLock bridge events are emitted.
     const static bool LOG_CODELOCK_EVENTS = true;
 
-    // Original CodeLockLogger categories.
+    // Semantic operation categories.
     const static bool LOG_ACCESS_EVENTS = true;
     const static bool LOG_ATTACH_EVENTS = true;
     const static bool LOG_RAID_EVENTS = true;
@@ -21,7 +21,7 @@ class ServerSentryCodeLockConsts
     const static bool LOG_ADD_GUEST = true;
     const static bool LOG_REMOVE_LOCK = true;
 
-    // Explicit failed attempts from the exact lock in the decoded RPC payload.
+    // Results observed from the exact lock checked by the original RPC method.
     // Passcodes are never written; only the failed result is logged.
     const static bool LOG_FAILED_PASSCODE = true;
 

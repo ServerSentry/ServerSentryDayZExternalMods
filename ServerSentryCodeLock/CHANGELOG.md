@@ -1,6 +1,16 @@
 # Changelog
 
-## Unreleased
+## 1.2.0
+
+- Remove the dependency on the locally patched `CodeLockLogContext`, `CaptureLockEvent` and `WriteLockEvent` API that prevented the regular CodeLock mod from compiling.
+- Capture exact targets inside extension-owned wrappers around existing RPC and action methods, preserving original behavior through `super` calls.
+- Resolve only the explicit target's attachment slot, avoiding the vanilla/modded CodeLock getter collision. Keep all proximity searches disabled.
+- Observe passcode results, menu responses, ownership changes and removal outcomes without reading the RPC stream or storing PINs.
+- Capture final raid state before deletion; keep semantic attempts separate from optional diagnostic deduplication.
+- Leave vanilla DigitalCodeLock logging to the existing main-mod hooks; require no main-mod or third-party-mod changes.
+- Add extension API contract checks and update installation instructions.
+
+## Previous development changes (superseded by 1.2.0)
 
 - Replace all proximity searches, RPC-target guessing, and position-based legacy attribution with exact lock/parent/actor snapshots supplied through the updated CodeLock logging API.
 - Capture primitive metadata with `CaptureLockEvent` before mutation and emit explicit outcomes through `WriteLockEvent` afterwards; preserve the original lock and parent across detachment and deletion.
